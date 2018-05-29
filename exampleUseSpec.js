@@ -24,7 +24,8 @@ describe("Exercise Administrator Authenticated Use Cases", function() {
           .end(function(error, response){
             expect(response.status).to.equal(200);
             authToken = response.body['authentication']['token'];
-
+            agent.set('Authorization','Bearer ' + authToken)
+            agent.set('Cookie','token=' + authToken)
             done();
           
           });
@@ -39,12 +40,10 @@ describe("Exercise Administrator Authenticated Use Cases", function() {
         tmpAgent
           .post(url+'/api/Users/')
           .set('Content-Type', 'application/json;charset=utf-8')
-          
           .send(postData)
           .end(function(error, response, body) {
             expect(response.status).to.equal(201);
-            agent.set('Authorization','Bearer ' + authToken)
-            agent.set('Cookie','token=' + authToken)
+
             agent.get(url+'/rest/user/authentication-details/', function(error, response, body) {
               expect(response.status).to.equal(200);
               expect(JSON.stringify(response.body)).to.contain('"email":"' + testEmail + '"');
@@ -53,6 +52,24 @@ describe("Exercise Administrator Authenticated Use Cases", function() {
           });
       
       
+    });
+    it("Authenticated adding shopping cart quantity 2", function(done) {
+      this.timeout(4000)
+      agent
+        .post(url+'/api/BasketItems/')
+        .set('Content-Type', 'application/json;charset=utf-8')
+        .send({"ProductId":5,"BasketId":"1","quantity":2})
+        .end(function(error, response, body) {
+          expect(response.status).to.equal(201)
+          agent
+            .post(url+'/rest/basket/1/checkout')
+            .set('Content-Type', 'application/json;charset=utf-8')
+            .send()
+            .end(function(error, response, body) {
+              expect(response.status).to.equal(200)
+              done();
+          });
+        });
     });
     it("Authenticated users may leave feedback", function(done) {
       var tmpAgent = request.agent();
@@ -83,6 +100,12 @@ describe("Exercise Administrator Authenticated Use Cases", function() {
           done();
         });
     });
+    it("Users may check the contents of their own shopping cart.", function(done) {
+      agent.get(url+'/rest/basket/1', function(error, response, body) {
+        expect(response.status).to.equal(200);
+        done();
+      });
+    }); 
 });
 
 describe("Exercise Unauthenticated Use Cases", function() {
@@ -122,6 +145,7 @@ describe("Exercise Unauthenticated Use Cases", function() {
           });
         });
     });
+
     it("Unauthenticated users may read product information", function(done) {
       request.get(url+'/api/Products/1', function(error, response, body) {
         expect(response.status).to.equal(200)

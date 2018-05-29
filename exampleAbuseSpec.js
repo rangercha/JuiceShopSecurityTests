@@ -23,7 +23,8 @@ describe("Exercise Authenticated Use Cases", function() {
       .end(function(error, response){
         expect(response.status).to.equal(200);
         authToken = response.body['authentication']['token'];
-
+        agent.set('Authorization','Bearer ' + authToken)
+        agent.set('Cookie','token=' + authToken)
         done();
           
       });
@@ -42,8 +43,7 @@ describe("Exercise Authenticated Use Cases", function() {
           .send(postData)
           .end(function(error, response, body) {
             expect(response.status).to.equal(201);
-            agent.set('Authorization','Bearer ' + authToken)
-            agent.set('Cookie','token=' + authToken)
+            
             agent.get(url+'/rest/user/authentication-details/', function(error, response, body) {
               expect(response.status).to.equal(200);
               expect(JSON.stringify(response.body)).to.not.contain('"email":"' + testEmail + '"');
@@ -53,7 +53,7 @@ describe("Exercise Authenticated Use Cases", function() {
       
       
     });
-    it("Ratings must be between 1 and 5, inclusive", function(done) {
+    it("Ratings must be between 1 and 5, inclusive, 0 should fail", function(done) {
       this.timeout(4000)
       var tmpAgent = request.agent();
       tmpAgent
